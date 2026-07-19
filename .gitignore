@@ -1,0 +1,9 @@
+# Keep the Claude instructions file out of version control
+CLAUDE.md
+
+# CMake build output directories
+build/
+cmake-build-*/
+
+# macOS filesystem noise
+.DS_Store
