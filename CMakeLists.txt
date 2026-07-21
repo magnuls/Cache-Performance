@@ -1,12 +1,10 @@
-# Minimum CMake version required to configure this project.
-# 3.16 is a safe, widely-available baseline.
 cmake_minimum_required(VERSION 3.16)
 
 # Project name and the language it uses.
 project(CachePerformanceScript LANGUAGES CXX)
 
-# Use C++17 and make it a hard requirement (no silent fallback to an
-# older standard). Disable compiler-specific extensions for portability.
+# Use C++17 and make it a hard requirement 
+# Disable compiler-specific extensions for portability.
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -23,9 +21,13 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # The executable target for the benchmark.
-# NOTE: src/main.cpp does not exist yet — you will write it yourself.
-# CMake configuration will fail until that file is created; that's expected.
-add_executable(cache_bench src/main.cpp)
+add_executable(cache_bench src/main.cpp 
+	src/system_info/system_info.cpp
+
+)
+
+# add to the header search path
+target_include_directories(cache_bench PUBLIC include)
 
 # Warnings help catch mistakes early. These flags are for GCC/Clang
 # (AppleClang on macOS included).

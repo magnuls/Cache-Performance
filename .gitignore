@@ -1,9 +1,11 @@
-# Keep the Claude instructions file out of version control
 CLAUDE.md
 
-# CMake build output directories
-build/
-cmake-build-*/
+# build dir
+/build/
+
 
 # macOS filesystem noise
 .DS_Store
+
+#Txt file for notes
+HOW_TO_MEASURE_CACHE_PERFORMANCE.txt

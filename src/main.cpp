@@ -1,10 +1,11 @@
 #include <iostream>
 
-struct A {};
-
+#include "system_info/system_info.h"
+using namespace std;
 int main() {
-    long x = 4;
-    std::cout << sizeof(x) << '\n';
+    const AppleSystemInfo& info = AppleSystemInfo::get_instance();
+
+    info.print_summary();
 
     return 0;
 }
