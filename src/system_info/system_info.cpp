@@ -1,5 +1,7 @@
 #include "system_info.h"
 
+#include "../types.h"
+
 SystemInfo::SystemInfo(int cores, int64_t ram, int64_t l1, int64_t l2)
     : core_count(cores), total_ram(ram), l1_cache(l1), l2_cache(l2) {};
 
@@ -8,8 +10,8 @@ SystemInfo::SystemInfo(int cores, int64_t ram, int64_t l1, int64_t l2)
 
 #include <cstdio>
 
-int64_t AppleSystemInfo::get(const char* name) {
-    int64_t value = 0;
+i64 AppleSystemInfo::get(const char* name) {
+    i64 value = 0;
     size_t size = sizeof(value);
     sysctlbyname(name, &value, &size, nullptr, 0);
     return value;
@@ -30,8 +32,8 @@ AppleSystemInfo::AppleSystemInfo()
       e_l1d_cache(get("hw.perflevel1.l1dcachesize")) {}
 
 void AppleSystemInfo::print_summary() const {
-    auto mib = [](int64_t bytes) { return bytes / (1024.0 * 1024.0); };
-    auto kib = [](int64_t bytes) { return bytes / 1024.0; };
+    auto mib = [](i64 bytes) { return bytes / (1024.0 * 1024.0); };
+    auto kib = [](i64 bytes) { return bytes / 1024.0; };
 
     std::printf("Apple Silicon System Info\n");
     std::printf("-------------------------\n");
