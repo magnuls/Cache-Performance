@@ -2,8 +2,14 @@
 
 #include "../types.h"
 
-SystemInfo::SystemInfo(int cores, int64_t ram, int64_t l1, int64_t l2)
-    : core_count(cores), total_ram(ram), l1_cache(l1), l2_cache(l2) {};
+SystemInfo::SystemInfo(i32 cores, i64 ram, i64 l1, i64 l2, i64 line_size,
+                       i64 page_size)
+    : core_count(cores),
+      total_ram(ram),
+      l1_cache(l1),
+      l2_cache(l2),
+      cache_line_size(line_size),
+      page_size(page_size) {};
 
 #if defined(__APPLE__)
 #include <sys/sysctl.h>
@@ -16,20 +22,35 @@ i64 AppleSystemInfo::get(const char* name) {
     sysctlbyname(name, &value, &size, nullptr, 0);
     return value;
 }
+
+std::string AppleSystemInfo::get_string(const char* name) {
+    char buffer[128] = {};
+    size_t size = sizeof(buffer) - 1;
+    if (sysctlbyname(name, buffer, &size, nullptr, 0) != 0) return "unknown";
+    return buffer;
+}
 // hw.perflevel0.l1dcachesize
 AppleSystemInfo::AppleSystemInfo()
     : SystemInfo(get("hw.physicalcpu"),              // total cores
                  get("hw.memsize"),                  // ram_bytes
                  get("hw.perflevel0.l1dcachesize"),  // base l1 (P d-cache,
                                                      // documented choice)
-                 get("hw.perflevel0.l2cachesize")),  // base l2 (P-cluster L2)
+                 get("hw.perflevel0.l2cachesize"),   // base l2 (P-cluster L2)
+                 get("hw.cachelinesize"),            // 128 on Apple silicon
+                 get("hw.pagesize")),                // 16 KiB on Apple silicon
       p_cores(get("hw.perflevel0.physicalcpu")),
       e_cores(get("hw.perflevel1.physicalcpu")),
       slc_bytes(-1),  // not exposed by sysctl
       p_l1i_cache(get("hw.perflevel0.l1icachesize")),
       p_l1d_cache(get("hw.perflevel0.l1dcachesize")),
       e_l1i_cache(get("hw.perflevel1.l1icachesize")),
-      e_l1d_cache(get("hw.perflevel1.l1dcachesize")) {}
+      e_l1d_cache(get("hw.perflevel1.l1dcachesize")),
+      e_l2_cache(get("hw.perflevel1.l2cachesize")),
+      p_cpus_per_l2(get("hw.perflevel0.cpusperl2")),
+      e_cpus_per_l2(get("hw.perflevel1.cpusperl2")),
+      p_clusters(p_cpus_per_l2 > 0 ? p_cores / p_cpus_per_l2 : 0),
+      e_clusters(e_cpus_per_l2 > 0 ? e_cores / e_cpus_per_l2 : 0),
+      chip_name(get_string("machdep.cpu.brand_string")) {}
 
 void AppleSystemInfo::print_summary() const {
     auto mib = [](i64 bytes) { return bytes / (1024.0 * 1024.0); };
@@ -37,19 +58,28 @@ void AppleSystemInfo::print_summary() const {
 
     std::printf("Apple Silicon System Info\n");
     std::printf("-------------------------\n");
+    std::printf("Chip:        %s\n", chip_name.c_str());
     std::printf("Cores:       %d total (%d P + %d E)\n", core_count, p_cores,
                 e_cores);
+    std::printf("Clusters:    %d P-cluster(s) of %d cores, %d E-cluster(s) of "
+                "%d cores\n",
+                p_clusters, p_cpus_per_l2, e_clusters, e_cpus_per_l2);
     std::printf("RAM:         %.1f GiB\n",
                 total_ram / (1024.0 * 1024.0 * 1024.0));
     std::printf("P-core L1:   %.0f KiB inst / %.0f KiB data\n",
                 kib(p_l1i_cache), kib(p_l1d_cache));
     std::printf("E-core L1:   %.0f KiB inst / %.0f KiB data\n",
                 kib(e_l1i_cache), kib(e_l1d_cache));
-    std::printf("L2:          %.1f MiB\n", mib(l2_cache));
+    std::printf("P-cluster L2: %.1f MiB (shared by %d cores)\n", mib(l2_cache),
+                p_cpus_per_l2);
+    std::printf("E-cluster L2: %.1f MiB (shared by %d cores)\n",
+                mib(e_l2_cache), e_cpus_per_l2);
     if (slc_bytes >= 0)
         std::printf("SLC:         %.1f MiB\n", mib(slc_bytes));
     else
         std::printf("SLC:         unavailable\n");
+    std::printf("Cache line:  %lld B\n", (long long)cache_line_size);
+    std::printf("Page size:   %.0f KiB\n", kib(page_size));
 }
 
 #endif

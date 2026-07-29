@@ -1,6 +1,8 @@
 #ifndef SYSTEM_INFO_H
 #define SYSTEM_INFO_H
 
+#include <string>
+
 #include "../types.h"
 // EVERYTHING IS IN BYTES
 /*
@@ -10,7 +12,7 @@
  *
  * On Apple ARM chips, the base l1_cache and l2_cache fields hold
  * P-cluster values, and the L2 is SHARED by the whole P-cluster,
- * not private per core. On i32el/AMD, L2 is typically per-core.
+ * not private per core. On Intel/AMD, L2 is typically per-core.
  * So per-core math like l2_cache / core_count is not portable.
  *
  * For exact topology, use the derived struct for your chip.
@@ -22,6 +24,10 @@ struct SystemInfo {
     const i64 total_ram;
     const i64 l1_cache;
     const i64 l2_cache;
+    // Knee of the stride sweep (Experiment B) should land here.
+    const i64 cache_line_size;
+    // First untimed warm-up pass exists to pay these faults up front.
+    const i64 page_size;
 
     virtual ~SystemInfo() = default;
     virtual void print_summary() const = 0;
@@ -34,7 +40,8 @@ struct SystemInfo {
     void operator=(const SystemInfo&&) = delete;
 
    protected:
-    SystemInfo(i32 cores, i64 ram, i64 l1, i64 l2);
+    SystemInfo(i32 cores, i64 ram, i64 l1, i64 l2, i64 line_size,
+               i64 page_size);
 };
 
 #if defined(__APPLE__)
@@ -47,6 +54,17 @@ struct AppleSystemInfo : SystemInfo {
     const i64 p_l1d_cache;
     const i64 e_l1i_cache;
     const i64 e_l1d_cache;
+    // E-cluster shared L2 (base l2_cache holds the P-cluster value).
+    const i64 e_l2_cache;
+    // How many cores share each L2 — needed to interpret the multi-
+    // threaded sweep, where cluster-mates contend for the same L2.
+    const i32 p_cpus_per_l2;
+    const i32 e_cpus_per_l2;
+    // Number of clusters of each type (cores / cores-per-cluster).
+    const i32 p_clusters;
+    const i32 e_clusters;
+    // e.g. "Apple M2 Pro" — for labeling CSV output / plots.
+    const std::string chip_name;
 
     ~AppleSystemInfo() override = default;
     inline static const AppleSystemInfo& get_instance() {
@@ -58,13 +76,14 @@ struct AppleSystemInfo : SystemInfo {
    private:
     AppleSystemInfo();
     static i64 get(const char* name);
+    static std::string get_string(const char* name);
 };
 /*
  * Later on in the project I will implement system info for
- * AMD chips and i32el Chips (x86 architecture):w
+ * AMD chips and Intel chips (x86 architecture)
  *
 
-struct i32elSystemInfo : SystemInfo {
+struct IntelSystemInfo : SystemInfo {
     const i32 p_cores;
     const i32 e_cores;
     const i64 system_cache;
