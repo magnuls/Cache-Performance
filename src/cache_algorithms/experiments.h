@@ -1,17 +1,19 @@
 #ifndef EXPERIMENTS_H
 #define EXPERIMENTS_H
-#include <chrono>
-#include <limits>
+#include <vector>
 
-#include "../system_info/system_info.h"
 #include "../types.h"
 
-#if defined(__APPLE__)
-const AppleSystemInfo& info = AppleSystemInfo::get_instance();
-
-void size_detection(i64 N) {
-    // Solution
-}
-
+#ifndef __APPLE__
+#error "cache_bench targets Apple Silicon"
 #endif
+
+struct Measurement {
+    i64 buffer_bytes;
+    f64 ns_per_access;
+};
+
+std::vector<Measurement> cache_size_detection(i64 N);
+std::vector<Measurement> cache_line_size_detection(i64 N);
+
 #endif
