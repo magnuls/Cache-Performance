@@ -61,9 +61,10 @@ void AppleSystemInfo::print_summary() const {
     std::printf("Chip:        %s\n", chip_name.c_str());
     std::printf("Cores:       %d total (%d P + %d E)\n", core_count, p_cores,
                 e_cores);
-    std::printf("Clusters:    %d P-cluster(s) of %d cores, %d E-cluster(s) of "
-                "%d cores\n",
-                p_clusters, p_cpus_per_l2, e_clusters, e_cpus_per_l2);
+    std::printf(
+        "Clusters:    %d P-cluster(s) of %d cores, %d E-cluster(s) of "
+        "%d cores\n",
+        p_clusters, p_cpus_per_l2, e_clusters, e_cpus_per_l2);
     std::printf("RAM:         %.1f GiB\n",
                 total_ram / (1024.0 * 1024.0 * 1024.0));
     std::printf("P-core L1:   %.0f KiB inst / %.0f KiB data\n",
