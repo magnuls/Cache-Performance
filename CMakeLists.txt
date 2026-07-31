@@ -21,13 +21,13 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # The executable target for the benchmark.
-add_executable(cache_bench src/main.cpp 
+add_executable(cache_bench src/main.cpp
 	src/system_info/system_info.cpp
-
+	src/cache_algorithms/experiments.cpp
 )
 
 # add to the header search path
-target_include_directories(cache_bench PUBLIC include)
+target_include_directories(cache_bench PUBLIC ${CMAKE_SOURCE_DIR}/src )
 
 # Warnings help catch mistakes early. These flags are for GCC/Clang
 # (AppleClang on macOS included).
