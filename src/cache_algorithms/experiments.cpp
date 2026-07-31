@@ -68,3 +68,39 @@ f64 timed_access(Node* arr, i64 num_accesses) {
                .count() /
            static_cast<f64>(num_accesses);
 }
+
+/*
+ * Sequence of operations...
+ * Instantiate array size -> Create Array -> fill array -> shuffle -> warm loop
+ * -> timed_acess -> push to measurements -> back to beginning
+ */
+std::vector<Measurement> cache_size_detection() {
+    std::vector<Measurement> measurements;
+    i64 total_steps = 0;
+    for (i64 s = STARTING_SET; s <= ENDING_SET; s <<= 1) ++total_steps;
+    i64 step = 0;
+
+    for (i64 i = STARTING_SET; i <= ENDING_SET; i <<= 1) {
+        // Put the progress bar for every size
+        show_progress(step++, total_steps, i);
+        i64 count = i / sizeof(Node);
+        std::unique_ptr<Node[]> arr = std::make_unique<Node[]>(count);
+        fill_array(arr.get(), count);
+        sattolo(arr.get(), count);
+        warm_loop(arr.get(), count);
+
+        i64 accesses = total_accesses(count);
+        f64 min_ns_pa = std::numeric_limits<f64>::max();
+        for (i16 i{}; i < TRIALS; ++i) {
+            min_ns_pa = std::min(timed_access(arr.get(), accesses), min_ns_pa);
+        }
+        measurements.push_back(
+            Measurement{static_cast<i64>(sizeof(Node)) * count, min_ns_pa});
+    }
+    show_progress(total_steps, total_steps, ENDING_SET);
+    std::fprintf(stderr, "\n");
+    return measurements;
+}
+
+// Needs implementation
+std::vector<Measurement> cache_line_size_detection();
