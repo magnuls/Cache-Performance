@@ -24,7 +24,6 @@ struct SystemInfo {
     const i64 total_ram;
     const i64 l1_cache;
     const i64 l2_cache;
-    // Knee of the stride sweep (Experiment B) should land here.
     const i64 cache_line_size;
     // First untimed warm-up pass exists to pay these faults up front.
     const i64 page_size;
@@ -56,15 +55,18 @@ struct AppleSystemInfo : SystemInfo {
     const i64 e_l1d_cache;
     // E-cluster shared L2 (base l2_cache holds the P-cluster value).
     const i64 e_l2_cache;
-    // How many cores share each L2 — needed to interpret the multi-
-    // threaded sweep, where cluster-mates contend for the same L2.
+    // How many cores share each L2  needed to interpret the multi
+    // threaded sweep where cluster buddies contend for the same L2.
     const i32 p_cpus_per_l2;
     const i32 e_cpus_per_l2;
     // Number of clusters of each type (cores / cores-per-cluster).
     const i32 p_clusters;
     const i32 e_clusters;
-    // e.g. "Apple M2 Pro" — for labeling CSV output / plots.
     const std::string chip_name;
+    // Not exposed by sysctl, so these come
+    // from system_profiler SPMemoryDataType
+    const std::string ram_type;
+    const std::string ram_manufacturer;
 
     ~AppleSystemInfo() override = default;
     inline static const AppleSystemInfo& get_instance() {
@@ -77,6 +79,12 @@ struct AppleSystemInfo : SystemInfo {
     AppleSystemInfo();
     static i64 get(const char* name);
     static std::string get_string(const char* name);
+
+    struct RamInfo {
+        std::string type;
+        std::string manufacturer;
+    };
+    static const RamInfo& get_ram_info();
 };
 /*
  * Later on in the project I will implement system info for
