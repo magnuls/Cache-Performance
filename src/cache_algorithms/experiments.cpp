@@ -31,3 +31,40 @@ struct alignas(kcache_line_size) Node {
     Node* next;
 };
 static_assert(sizeof(Node) == kcache_line_size);
+
+void fill_array(Node* arr, i64 count) {
+    for (i64 i{}; i < count; ++i) {
+        arr[i] = Node();
+        arr[i].next = &arr[i];
+    }
+}
+
+void warm_loop(Node* arr, i64 count) {
+    Node* temp = &arr[0];
+    while (--count >= 0) {
+        temp = temp->next;
+    }
+    dead = temp;
+}
+
+i64 total_accesses(i64 arr_size) {
+    i64 passes = 10;
+    i64 k_min = 10000000, k_max = 50000000;
+    return std::clamp(passes * arr_size, k_min, k_max);
+}
+// clamp(v,lo,hi) returns
+// lo if v < lo,
+// hi if v > hi,
+// else v
+
+f64 timed_access(Node* arr, i64 num_accesses) {
+    Node* p = arr;
+    const auto start{std::chrono::steady_clock::now()};
+    for (i64 i = 0; i < num_accesses; ++i) p = p->next;
+    const auto finish{std::chrono::steady_clock::now()};
+    // volatile assignment so compiler dosen't frick me
+    dead = p;
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(finish - start)
+               .count() /
+           static_cast<f64>(num_accesses);
+}
