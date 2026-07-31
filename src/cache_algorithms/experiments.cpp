@@ -104,3 +104,29 @@ std::vector<Measurement> cache_size_detection() {
 
 // Needs implementation
 std::vector<Measurement> cache_line_size_detection();
+
+void size_label(i64 bytes, char* out, size_t out_size) {
+    f64 kib = bytes / 1024.0f;
+    if (kib < 1024.0f) {
+        std::snprintf(out, out_size, "%.0fK", kib);
+    } else {
+        std::snprintf(out, out_size, "%.0fM", kib / 1024.0f);
+    }
+}
+
+/*
+ * Progress goes to stderr so ./cache_bench > results.csv keeps the
+ * CSV clean. '\r' rewrites the same terminal line in place
+ * the caller prints the final newline once the sweep is done.
+ */
+static void show_progress(i64 step, i64 total, i64 bytes) {
+    constexpr i64 kbar_width = 30;
+    i32 filled = static_cast<i32>(step * kbar_width / total);
+    char label[8];
+    size_label(bytes, label, sizeof(label));
+    std::fprintf(stderr, "\r[%-*.*s] %2lld/%lld  %5s",
+                 static_cast<i32>(kbar_width), filled,
+                 "==============================", static_cast<long long>(step),
+                 static_cast<long long>(total), label);
+    std::fflush(stderr);
+}
