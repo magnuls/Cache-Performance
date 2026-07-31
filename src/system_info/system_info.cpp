@@ -114,7 +114,8 @@ void AppleSystemInfo::print_summary() const {
         std::printf("SLC:         %.1f MiB\n", mib(slc_bytes));
     else
         std::printf("SLC:         unavailable\n");
-    std::printf("Cache line:  %lld B\n", (long long)cache_line_size);
+    std::printf("Cache line:  %lld B\n",
+                static_cast<long long>(cache_line_size));
     std::printf("Page size:   %.0f KiB\n", kib(page_size));
 }
 
