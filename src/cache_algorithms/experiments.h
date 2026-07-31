@@ -16,6 +16,7 @@
  */
 constexpr i64 STARTING_SET = i64{1} << 12;
 constexpr i64 ENDING_SET = i64{1} << 28;
+constexpr i64 TRIALS = 5;
 
 // Random engine thing, defined in experiments.cpp
 extern std::mt19937_64 rng;
@@ -58,7 +59,7 @@ void sattolo(T* arr, i64 count) {
 void warm_loop(Node* arr, i64 count);
 void fill_array(Node* arr, i64 count);
 i64 total_accesses(i64 arr_size);
-Measurement timed_access(Node* arr, i64 arr_size, i64 num_accesses);
+f64 timed_access(Node* arr, i64 num_accesses);
 
 /*
  * Runs the full sweep from STARTING_SET to ENDING_SET.
