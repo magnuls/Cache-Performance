@@ -1,5 +1,6 @@
 #ifndef EXPERIMENTS_H
 #define EXPERIMENTS_H
+#include <cstddef>
 #include <memory>
 #include <random>
 #include <vector>
@@ -68,4 +69,7 @@ f64 timed_access(Node* arr, i64 num_accesses);
 std::vector<Measurement> cache_size_detection();
 std::vector<Measurement> cache_line_size_detection();
 
+void size_label(i64 bytes, char* out, size_t out_size);
+// void show_progress(i64 step, i64 total, i64 bytes);
+void display_measurements(std::vector<Measurement>& v);
 #endif
