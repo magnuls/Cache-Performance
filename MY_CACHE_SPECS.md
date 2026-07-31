@@ -2,10 +2,23 @@
 
 Cache line: 128 B (x86 is 64 B)
 
-P-core: L1d 128 KB (2^17), L1i 192 KB, L2 16 MB (2^24, shared per cluster)
-E-core: L1d 64 KB (2^16), L1i 128 KB, L2 4 MB (shared per cluster)
+P-core Cache Specs:
 
-Memory: unified LPDDR5X, ~273 GB/s. No L3, SLC sits before DRAM.
+- L1d 128 KB (2^17)
+- L1i 192 KB,
+- L2 16 MB (2^24 shared per cluster)
+
+E-core Cache Specs:
+
+- L1d 64 KB (2^16)
+- L1i 128 KB
+- L2 4 MB (shared per cluster)
+
+Memory:
+unified LPDDR5X
+~273 GB/s
+
+No L3, SLC (Sytem Level Cache {shared btw}) sits before DRAM.
 
 ## Expected sweep steps (P-core via QoS)
 
