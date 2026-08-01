@@ -2,12 +2,13 @@
 
 #include "../types.h"
 
-SystemInfo::SystemInfo(i32 cores, i64 ram, i64 l1, i64 l2, i64 line_size,
-                       i64 page_size)
+SystemInfo::SystemInfo(i32 cores, i64 ram, i64 l1, i64 l2, i64 l3,
+                       i64 line_size, i64 page_size)
     : core_count(cores),
       total_ram(ram),
       l1_cache(l1),
       l2_cache(l2),
+      l3_cache(l3),
       cache_line_size(line_size),
       page_size(page_size) {};
 
@@ -20,7 +21,7 @@ SystemInfo::SystemInfo(i32 cores, i64 ram, i64 l1, i64 l2, i64 line_size,
 i64 AppleSystemInfo::get(const char* name) {
     i64 value = 0;
     size_t size = sizeof(value);
-    sysctlbyname(name, &value, &size, nullptr, 0);
+    if (sysctlbyname(name, &value, &size, nullptr, 0) != 0) return -1;
     return value;
 }
 
@@ -67,9 +68,8 @@ const AppleSystemInfo::RamInfo& AppleSystemInfo::get_ram_info() {
 AppleSystemInfo::AppleSystemInfo()
     : SystemInfo(get("hw.physicalcpu"), get("hw.memsize"),
                  get("hw.perflevel0.l1dcachesize"),
-
-                 get("hw.perflevel0.l2cachesize"), get("hw.cachelinesize"),
-                 get("hw.pagesize")),
+                 get("hw.perflevel0.l2cachesize"), get("hw.l3cachesize"),
+                 get("hw.cachelinesize"), get("hw.pagesize")),
       p_cores(get("hw.perflevel0.physicalcpu")),
       e_cores(get("hw.perflevel1.physicalcpu")),
       slc_bytes(-1),  // not exposed by sysctl

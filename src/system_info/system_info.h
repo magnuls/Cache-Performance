@@ -20,63 +20,59 @@
 
 // Abstract Class
 struct SystemInfo {
-    const i32 core_count;
-    const i64 total_ram;
-    const i64 l1_cache;
-    const i64 l2_cache;
-    const i64 cache_line_size;
+    i32 core_count;
+    i64 total_ram;
+    i64 l1_cache;
+    i64 l2_cache;
+    // On Apple this is the system level cache (SLC), macOS does not
+    // expose its size so it stays -1
+    i64 l3_cache;
+    i64 cache_line_size;
     // First untimed warm-up pass exists to pay these faults up front.
-    const i64 page_size;
+    i64 page_size;
 
     virtual ~SystemInfo() = default;
     virtual void print_summary() const = 0;
 
-    static const SystemInfo& get_instance();
-
-    SystemInfo(const SystemInfo&) = delete;
-    void operator=(const SystemInfo&) = delete;
-    SystemInfo(const SystemInfo&&) = delete;
-    void operator=(const SystemInfo&&) = delete;
+    SystemInfo(const SystemInfo&) = default;
+    SystemInfo& operator=(const SystemInfo&) = default;
+    SystemInfo(SystemInfo&&) = default;
+    SystemInfo& operator=(SystemInfo&&) = default;
 
    protected:
-    SystemInfo(i32 cores, i64 ram, i64 l1, i64 l2, i64 line_size,
+    SystemInfo(i32 cores, i64 ram, i64 l1, i64 l2, i64 l3, i64 line_size,
                i64 page_size);
 };
 
 #if defined(__APPLE__)
 // For Apple ARM Chips
 struct AppleSystemInfo : SystemInfo {
-    const i32 p_cores;
-    const i32 e_cores;
-    const i64 slc_bytes;
-    const i64 p_l1i_cache;
-    const i64 p_l1d_cache;
-    const i64 e_l1i_cache;
-    const i64 e_l1d_cache;
+    i32 p_cores;
+    i32 e_cores;
+    i64 slc_bytes;
+    i64 p_l1i_cache;
+    i64 p_l1d_cache;
+    i64 e_l1i_cache;
+    i64 e_l1d_cache;
     // E-cluster shared L2 (base l2_cache holds the P-cluster value).
-    const i64 e_l2_cache;
+    i64 e_l2_cache;
     // How many cores share each L2  needed to interpret the multi
     // threaded sweep where cluster buddies contend for the same L2.
-    const i32 p_cpus_per_l2;
-    const i32 e_cpus_per_l2;
+    i32 p_cpus_per_l2;
+    i32 e_cpus_per_l2;
     // Number of clusters of each type (cores / cores-per-cluster).
-    const i32 p_clusters;
-    const i32 e_clusters;
-    const std::string chip_name;
+    i32 p_clusters;
+    i32 e_clusters;
+    std::string chip_name;
     // Not exposed by sysctl, so these come
     // from system_profiler SPMemoryDataType
-    const std::string ram_type;
-    const std::string ram_manufacturer;
+    std::string ram_type;
+    std::string ram_manufacturer;
 
-    ~AppleSystemInfo() override = default;
-    inline static const AppleSystemInfo& get_instance() {
-        static AppleSystemInfo instance;
-        return instance;
-    }
+    AppleSystemInfo();
     void print_summary() const override;
 
    private:
-    AppleSystemInfo();
     static i64 get(const char* name);
     static std::string get_string(const char* name);
 
