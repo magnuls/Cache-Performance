@@ -10,13 +10,12 @@ using namespace std;
 int main() {
     // Uses P-Cores
     pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
-    // Need for apple
+    /*
     const AppleSystemInfo& info = AppleSystemInfo::get_instance();
-    info.print_summary();
-    // assert(info.cache_line_size <= 128);
-    //
-    // std::vector v = cache_size_detection();
-    // display_measurements(v);
+    */
+    assert(info.cache_line_size <= 128);
+    std::vector v = cache_size_detection();
+    display_measurements(v);
 
     return 0;
 }
