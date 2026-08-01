@@ -12,3 +12,5 @@ HOW_TO_MEASURE_CACHE_PERFORMANCE.txt
 
 .cache/*
 .claude/
+
+results.csv

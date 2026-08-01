@@ -136,11 +136,11 @@ static void show_progress(i64 step, i64 total, i64 bytes) {
  * Aligned table to stdout for output in the terminal
  */
 void display_measurements(const std::vector<Measurement>& v) {
-    std::printf("%10s, %5s, %13s\n", "size_bytes", "label", "ns_per_access");
+    std::printf("%10s, %5s, %18s\n", "size_bytes", "label", "ns_per_access");
     for (const Measurement& m : v) {
         char label[8];
         size_label(m.buffer_bytes, label, sizeof(label));
-        std::printf("%10lld, %5s, %13.3f\n",
+        std::printf("%10lld, %5s, %18.15g\n",
                     static_cast<long long>(m.buffer_bytes), label,
                     m.ns_per_access);
     }
@@ -160,7 +160,8 @@ void write_csv(const std::vector<Measurement>& v, const char* path) {
     for (const Measurement& m : v) {
         char label[8];
         size_label(m.buffer_bytes, label, sizeof(label));
-        std::fprintf(f, "%lld,%s,%.3f\n",
+        // Double is accurate to 15 significant digits, %g counts those
+        std::fprintf(f, "%lld,%s,%.15g\n",
                      static_cast<long long>(m.buffer_bytes), label,
                      m.ns_per_access);
     }

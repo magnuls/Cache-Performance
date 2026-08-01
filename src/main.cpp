@@ -16,6 +16,9 @@ int main() {
     assert(info.cache_line_size <= 128);
     std::vector v = cache_size_detection();
     display_measurements(v);
+    // Relative to the directory you launch from (pls run from the Repo Root)
+    // Need plot.py to find the csv
+    write_csv(v, "results.csv");
 
     return 0;
 }
