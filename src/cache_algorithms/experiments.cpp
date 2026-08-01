@@ -133,11 +133,9 @@ static void show_progress(i64 step, i64 total, i64 bytes) {
 }
 
 /*
- * CSV to stdout ) so the sweep can
- * be redirected to a file and plotted. The label column is just for
- * skimming the output
+ * Aligned table to stdout for output in the terminal
  */
-void display_measurements(std::vector<Measurement>& v) {
+void display_measurements(const std::vector<Measurement>& v) {
     std::printf("%10s, %5s, %13s\n", "size_bytes", "label", "ns_per_access");
     for (const Measurement& m : v) {
         char label[8];
@@ -146,4 +144,25 @@ void display_measurements(std::vector<Measurement>& v) {
                     static_cast<long long>(m.buffer_bytes), label,
                     m.ns_per_access);
     }
+}
+
+/*
+ *
+ * Writes to a csv file.
+ */
+void write_csv(const std::vector<Measurement>& v, const char* path) {
+    FILE* f = std::fopen(path, "w");
+    if (!f) {
+        std::fprintf(stderr, "write_csv: could not open %s\n", path);
+        return;
+    }
+    std::fprintf(f, "size_bytes,label,ns_per_access\n");
+    for (const Measurement& m : v) {
+        char label[8];
+        size_label(m.buffer_bytes, label, sizeof(label));
+        std::fprintf(f, "%lld,%s,%.3f\n",
+                     static_cast<long long>(m.buffer_bytes), label,
+                     m.ns_per_access);
+    }
+    std::fclose(f);
 }
