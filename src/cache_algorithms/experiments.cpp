@@ -108,6 +108,7 @@ std::vector<Measurement> cache_line_size_detection();
 void size_label(i64 bytes, char* out, size_t out_size) {
     f64 kib = bytes / 1024.0f;
     if (kib < 1024.0f) {
+        // Rounds numbers btw
         std::snprintf(out, out_size, "%.0fK", kib);
     } else {
         std::snprintf(out, out_size, "%.0fM", kib / 1024.0f);
