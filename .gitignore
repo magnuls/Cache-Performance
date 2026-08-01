@@ -13,4 +13,8 @@ HOW_TO_MEASURE_CACHE_PERFORMANCE.txt
 .cache/*
 .claude/
 
+#Csv file
 results.csv
+
+#A python script example from the website
+ex.py
