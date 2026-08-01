@@ -70,6 +70,9 @@ std::vector<Measurement> cache_line_size_detection();
 
 void size_label(i64 bytes, char* out, size_t out_size);
 
+struct SystemInfo;
+
 void display_measurements(const std::vector<Measurement>& v);
-void write_csv(const std::vector<Measurement>& v, const char* path);
+void write_csv(const std::vector<Measurement>& v, const char* path,
+               const SystemInfo& info);
 #endif

@@ -17,7 +17,6 @@ static void show_progress(i64 step, i64 total, i64 bytes);
  * We must randomly access array elements so the prefetcher
  * does not automatically pull cache lines for us
  */
-const AppleSystemInfo& info = AppleSystemInfo::get_instance();
 std::mt19937_64 rng(std::random_device{}());
 constexpr i64 kcache_line_size = 128;
 volatile Node* dead;
@@ -150,20 +149,26 @@ void display_measurements(const std::vector<Measurement>& v) {
  *
  * Writes to a csv file.
  */
-void write_csv(const std::vector<Measurement>& v, const char* path) {
+void write_csv(const std::vector<Measurement>& v, const char* path,
+               const SystemInfo& info) {
     FILE* f = std::fopen(path, "w");
     if (!f) {
         std::fprintf(stderr, "write_csv: could not open %s\n", path);
         return;
     }
-    std::fprintf(f, "size_bytes,label,ns_per_access\n");
+    std::fprintf(f,
+                 "size_bytes,label,ns_per_access,l1_bytes,l2_bytes,l3_bytes,"
+                 "ram_bytes\n");
     for (const Measurement& m : v) {
         char label[8];
         size_label(m.buffer_bytes, label, sizeof(label));
         // Double is accurate to 15 significant digits, %g counts those
-        std::fprintf(f, "%lld,%s,%.15g\n",
+        std::fprintf(f, "%lld,%s,%.15g,%lld,%lld,%lld,%lld\n",
                      static_cast<long long>(m.buffer_bytes), label,
-                     m.ns_per_access);
+                     m.ns_per_access, static_cast<long long>(info.l1_cache),
+                     static_cast<long long>(info.l2_cache),
+                     static_cast<long long>(info.l3_cache),
+                     static_cast<long long>(info.total_ram));
     }
     std::fclose(f);
 }
