@@ -10,11 +10,13 @@ HOW_TO_MEASURE_CACHE_PERFORMANCE.txt
 
 .cache/*
 
-#Csv file
+#Csv files
+results.csv
 results.csv
 
 #A python script example from the website
 ex.py
+
 
 #Instructions for CMake
 BUILDING.md

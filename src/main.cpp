@@ -15,9 +15,9 @@ int main() {
     info.print_summary();
     std::vector v = cache_size_detection();
     display_measurements(v);
-    // Relative to the directory you launch from (pls run from the Repo Root)
-    // Need plot.py to find the csv
-    write_csv(v, "results.csv", info);
+    // Relative to the directory you launch from (pls run ./build/cache_bench
+    // from the Repo Root) Need plot.py to find the csv
+    write_csv(v, "size_detection.csv", info);
 
     return 0;
 }
