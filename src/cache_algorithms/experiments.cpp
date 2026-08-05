@@ -18,7 +18,6 @@ static void show_progress(i64 step, i64 total, i64 bytes);
  * does not automatically pull cache lines for us
  */
 std::mt19937_64 rng(std::random_device{}());
-constexpr i64 kcache_line_size = 128;
 volatile Node* dead;
 /*
  * First Pass should be dense, go from 4KB -> 256 MB, then detect where
@@ -26,10 +25,6 @@ volatile Node* dead;
  * of the effective cache size. We will double each byte size so
  * it will be 16 doublings to reach 256MB.
  */
-struct alignas(kcache_line_size) Node {
-    Node* next;
-};
-static_assert(sizeof(Node) == kcache_line_size);
 
 void fill_array(Node* arr, i64 count) {
     for (i64 i{}; i < count; ++i) {

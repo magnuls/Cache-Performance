@@ -6,23 +6,34 @@
 
 #include "../types.h"
 
+// The error will happen if you are not on an apple device
 #ifndef __APPLE__
 #error "cache_bench targets Apple Silicon"
+#endif
+
+#ifndef CAHCE_LINE
+#define CAHCE_LINE 128
 #endif
 
 /*
  * Sweep bounds. Our starting set is 4KB, our ending set is 256MB.
  * 2^12 = 4096 bytes, 2^28 = 268,435,456 bytes.
  */
-constexpr i64 STARTING_SET = i64{1} << 12;
-constexpr i64 ENDING_SET = i64{1} << 28;
-constexpr i64 TRIALS = 5;
+inline constexpr i64 STARTING_SET = i64{1} << 12;
+inline constexpr i64 ENDING_SET = i64{1} << 28;
+inline constexpr i64 TRIALS = 5;
 
 // Random engine thing, defined in experiments.cpp
 extern std::mt19937_64 rng;
 
-// Each node is 128 bytes (one cache line). Definition in .cpp.
-struct Node;
+// Each node is 128 bytes (one cache line)
+inline constexpr i64 kcache_line_size = CACHE_LINE;
+struct alignas(kcache_line_size) Node {
+    Node* next;
+    char padding[kcache_line_size - sizeof(next)];
+};
+
+static_assert(sizeof(Node) == kcache_line_size);
 
 struct Measurement {
     // Size of the array in bytes
