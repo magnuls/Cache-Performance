@@ -12,7 +12,7 @@ HOW_TO_MEASURE_CACHE_PERFORMANCE.txt
 
 #Csv files
 results.csv
-results.csv
+size_detection.csv
 
 #A python script example from the website
 ex.py
