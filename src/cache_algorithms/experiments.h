@@ -48,12 +48,16 @@ struct Measurement {
  * Precondition: arr must be identity-linked (arr[i].next == &arr[i]).
  */
 template <typename T>
-void sattolo(T* arr, i64 count) {
+void sattolo(T* arr, i64 count, std::mt19937_64& engine) {
     for (i64 i = 0; i < count - 1; ++i) {
         std::uniform_int_distribution<i64> dist(i + 1, count - 1);
-        i64 j = dist(rng);
-        std::swap(arr[i].next, arr[j].next);
+        std::swap(arr[i].next, arr[dist(engine)].next);
     }
+}
+
+template <typename T>
+void sattolo(T* arr, i64 count) {
+    sattolo(arr, count, rng);
 }
 
 /*
