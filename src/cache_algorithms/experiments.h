@@ -4,6 +4,7 @@
 #include <random>
 #include <vector>
 
+#include "../system_info/system_info.h"
 #include "../types.h"
 
 // The error will happen if you are not on an apple device
@@ -11,17 +12,25 @@
 #error "cache_bench targets Apple Silicon"
 #endif
 
-#ifndef CAHCE_LINE
-#define CAHCE_LINE 128
+#ifndef CACHE_LINE
+#define CACHE_LINE 128
 #endif
 
 /*
- * Sweep bounds. Our starting set is 4KB, our ending set is 256MB.
+ * Sweep bounds. Our starting set  for readingis 4KB, our ending set is 256MB.
  * 2^12 = 4096 bytes, 2^28 = 268,435,456 bytes.
  */
-inline constexpr i64 STARTING_SET = i64{1} << 12;
-inline constexpr i64 ENDING_SET = i64{1} << 28;
+inline constexpr i64 STARTING_SET_READ = i64{1} << 12;
+inline constexpr i64 ENDING_SET_READ = i64{1} << 28;
 inline constexpr i64 TRIALS = 5;
+
+// 8 bytes -> 1024
+inline constexpr i64 STARTING_SET_WRITE = i64{1} << 3;
+inline constexpr i64 ENDING_SET_WRITE = i64{1} << 10;
+
+// Stride Lengths (4B -> 512B)
+inline constexpr i64 START_STRIDE_LENGTH = i64{1} << 2;
+inline constexpr i64 END_STRIDE_LENGTH = i64{1} << 9;
 
 // Random engine thing, defined in experiments.cpp
 extern std::mt19937_64 rng;
@@ -30,7 +39,7 @@ extern std::mt19937_64 rng;
 inline constexpr i64 kcache_line_size = CACHE_LINE;
 struct alignas(kcache_line_size) Node {
     Node* next;
-    char padding[kcache_line_size - sizeof(next)];
+    u64 writeto = 1u;
 };
 
 static_assert(sizeof(Node) == kcache_line_size);
@@ -47,7 +56,7 @@ struct Measurement {
  * T* next member.
  * Precondition: arr must be identity-linked (arr[i].next == &arr[i]).
  */
-template <typename T>
+template<typename T>
 void sattolo(T* arr, i64 count, std::mt19937_64& engine) {
     for (i64 i = 0; i < count - 1; ++i) {
         std::uniform_int_distribution<i64> dist(i + 1, count - 1);
@@ -55,7 +64,7 @@ void sattolo(T* arr, i64 count, std::mt19937_64& engine) {
     }
 }
 
-template <typename T>
+template<typename T>
 void sattolo(T* arr, i64 count) {
     sattolo(arr, count, rng);
 }
@@ -81,13 +90,10 @@ f64 timed_access(Node* arr, i64 num_accesses);
  * Each Measurement is the minimum over repeated timed runs.
  */
 std::vector<Measurement> cache_size_detection();
-std::vector<Measurement> cache_line_size_detection();
+std::vector<Measurement> cache_line_size_detection(const AppleSystemInfo& s);
 
 void size_label(i64 bytes, char* out, size_t out_size);
 
-struct SystemInfo;
-
 void display_measurements(const std::vector<Measurement>& v);
-void write_csv(const std::vector<Measurement>& v, const char* path,
-               const SystemInfo& info);
+void write_csv(const std::vector<Measurement>& v, const char* path, const SystemInfo& info);
 #endif
