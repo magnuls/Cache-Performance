@@ -38,6 +38,8 @@ void fill_array(Node* arr, i64 count) {
 }
 
 void warm_loop(Node* arr, i64 count) {
+    Node* volatile dead;
+
     Node* temp = &arr[0];
     while (--count >= 0) {
         temp = temp->next;
@@ -60,7 +62,8 @@ f64 timed_access(Node* arr, i64 num_accesses) {
     const auto finish{std::chrono::steady_clock::now()};
     // volatile assignment so compiler dosen't frick me
     dead = p;
-    return std::chrono::duration_cast<std::chrono::nanoseconds>(finish - start).count() /
+    asm volatile("" ::"r"(dead) : "memory");
+    return std::chrono::duration<f64, std::nano>(finish - start).count() /
            static_cast<f64>(num_accesses);
 }
 
