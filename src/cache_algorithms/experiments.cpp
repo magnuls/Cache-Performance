@@ -1,4 +1,5 @@
-#include "experiments.h"
+#include "cache_algorithms/experiments.h"
+
 #include <cassert>
 
 #include <algorithm>
@@ -10,19 +11,15 @@
 #include <memory>
 #include <numeric>
 #include <random>
-
-#include "../system_info/system_info.h"
-#include "../types.h"
 #include <unistd.h>
 
-// Forward decleration for progress bar
-static void show_progress(i64 step, i64 total, i64 bytes);
+#include "cache_algorithms/config.h"
+#include "cache_algorithms/node.h"
+#include "cache_algorithms/sattolo.h"
+#include "report/report.h"
+#include "system_info/system_info.h"
+#include "types.h"
 
-/*
- * We must randomly access array elements so the prefetcher
- * does not automatically pull cache lines for us
- */
-std::mt19937_64 rng{std::random_device{}()};
 /*
  * First Pass should be dense, go from 4KB -> 256 MB, then detect where
  * the cliffs are and add midpoints there to get a better estimate
@@ -30,6 +27,11 @@ std::mt19937_64 rng{std::random_device{}()};
  * it will be 16 doublings to reach 256MB.
  */
 
+namespace {
+
+/*
+ * fill_array -> identity-links (node->next = &node) the array in place
+ */
 void fill_array(Node* arr, i64 count) {
     for (i64 i{}; i < count; ++i) {
         arr[i] = Node();
@@ -37,6 +39,10 @@ void fill_array(Node* arr, i64 count) {
     }
 }
 
+/*
+ * warm_loop -> walks the chain untimed once, so cold misses and
+ * page faults occur off the clock
+ */
 void warm_loop(Node* arr, i64 count) {
     Node* volatile dead;
 
@@ -47,12 +53,19 @@ void warm_loop(Node* arr, i64 count) {
     dead = temp;
 }
 
+/*
+ * total_accesses -> number of accesses for a given array size
+ */
 i64 total_accesses(i64 arr_size) {
     i64 passes = 10;
     i64 k_min = 10000000, k_max = 50000000;
     return std::clamp(passes * arr_size, k_min, k_max);
 }
 
+/*
+ * timed_access -> runs repeated timed chases, returns the
+ * Measurement struct with the smallest ns_per_access
+ */
 f64 timed_access(Node* arr, i64 num_accesses) {
     Node* volatile dead;
     Node* p = arr;
@@ -67,12 +80,14 @@ f64 timed_access(Node* arr, i64 num_accesses) {
            static_cast<f64>(num_accesses);
 }
 
+} // namespace
+
 /*
  * Sequence of operations...
  * Instantiate array size -> Create Array -> fill array -> shuffle -> warm loop
  * -> timed_acess -> push to measurements -> back to beginning
  */
-std::vector<Measurement> cache_size_detection() {
+SweepResult cache_size_detection() {
     std::vector<Measurement> measurements;
     i64 total_steps = 0;
     for (i64 s = STARTING_SET_READ; s <= ENDING_SET_READ; s <<= 1)
@@ -83,7 +98,7 @@ std::vector<Measurement> cache_size_detection() {
         // Rng device
         std::mt19937_64 rng(std::random_device{}());
         // Put the progress bar for every size
-        show_progress(step++, total_steps, i);
+        show_progress(step++, total_steps, i, Axis::Bytes);
         i64 count = i / sizeof(Node);
         std::unique_ptr<Node[]> arr = std::make_unique<Node[]>(count);
         fill_array(arr.get(), count);
@@ -97,12 +112,12 @@ std::vector<Measurement> cache_size_detection() {
         }
         measurements.push_back(Measurement{static_cast<i64>(sizeof(Node)) * count, min_ns_pa});
     }
-    show_progress(total_steps, total_steps, ENDING_SET_READ);
+    show_progress(total_steps, total_steps, ENDING_SET_READ, Axis::Bytes);
     std::fprintf(stderr, "\n");
-    return measurements;
+    return SweepResult{Sweep::Size, Axis::Bytes, std::move(measurements)};
 }
 
-std::vector<Measurement> cache_line_size_detection(const AppleSystemInfo& s) {
+SweepResult cache_line_size_detection(const AppleSystemInfo& s) {
     assert(START_STRIDE_LENGTH >= sizeof(u32));
 
     const i64 buffer_bytes = s.l2_cache * 4;
@@ -159,7 +174,7 @@ std::vector<Measurement> cache_line_size_detection(const AppleSystemInfo& s) {
         ++total_steps;
 
     for (i64 stride = START_STRIDE_LENGTH; stride <= END_STRIDE_LENGTH; stride <<= 1) {
-        show_progress(step++, total_steps, stride);
+        show_progress(step++, total_steps, stride, Axis::Stride);
 
         const i64 num_slots = buffer_bytes / stride;
         std::vector<u32> buf(buffer_bytes / sizeof(u32), 0);
@@ -176,72 +191,7 @@ std::vector<Measurement> cache_line_size_detection(const AppleSystemInfo& s) {
         }
         measurements.push_back({stride, min_ns});
     }
-    show_progress(total_steps, total_steps, END_STRIDE_LENGTH);
+    show_progress(total_steps, total_steps, END_STRIDE_LENGTH, Axis::Stride);
     std::fprintf(stderr, "\n");
-    return measurements;
-}
-
-void size_label(i64 bytes, char* out, size_t out_size) {
-    f64 kib = bytes / 1024.0f;
-    if (bytes < 1024) {
-        std::snprintf(out, out_size, "%lldB", static_cast<long long>(bytes));
-    } else if (kib < 1024.0f) {
-        // Rounds numbers btw
-        std::snprintf(out, out_size, "%.0fK", kib);
-    } else {
-        std::snprintf(out, out_size, "%.0fM", kib / 1024.0f);
-    }
-}
-
-/*
- * progress bar goes to stderr
- */
-static void show_progress(i64 step, i64 total, i64 bytes) {
-    constexpr i64 kbar_width = 30;
-    i32 filled = static_cast<i32>(step * kbar_width / total);
-    char label[8];
-    size_label(bytes, label, sizeof(label));
-    std::fprintf(stderr, "\r[%-*.*s] %2lld/%lld  %5s", static_cast<i32>(kbar_width), filled,
-                 "==============================", static_cast<long long>(step),
-                 static_cast<long long>(total), label);
-    std::fflush(stderr);
-}
-
-/*
- * Aligned table to stdout for output in the terminal
- */
-void display_measurements(const std::vector<Measurement>& v) {
-    std::printf("%10s, %5s, %18s\n", "size_bytes", "label", "ns_per_access");
-    for (const Measurement& m : v) {
-        char label[8];
-        size_label(m.buffer_bytes, label, sizeof(label));
-        std::printf("%10lld, %5s, %18.15g\n", static_cast<long long>(m.buffer_bytes), label,
-                    m.ns_per_access);
-    }
-
-    std::fflush(stdout); // flush console output
-}
-
-/*
- *
- * Writes to a csv file.
- */
-void write_csv(const std::vector<Measurement>& v, const char* path, const SystemInfo& info) {
-    FILE* f = std::fopen(path, "w");
-    if (!f) {
-        std::fprintf(stderr, "write_csv: could not open %s\n", path);
-        return;
-    }
-    std::fprintf(f, "size_bytes,label,ns_per_access,l1_bytes,l2_bytes,l3_bytes,"
-                    "ram_bytes\n");
-    for (const Measurement& m : v) {
-        char label[8];
-        size_label(m.buffer_bytes, label, sizeof(label));
-        // Double is accurate to 15 significant digits, %g counts those
-        std::fprintf(f, "%lld,%s,%.15g,%lld,%lld,%lld,%lld\n",
-                     static_cast<long long>(m.buffer_bytes), label, m.ns_per_access,
-                     static_cast<long long>(info.l1_cache), static_cast<long long>(info.l2_cache),
-                     static_cast<long long>(info.l3_cache), static_cast<long long>(info.total_ram));
-    }
-    std::fclose(f);
+    return SweepResult{Sweep::LineSize, Axis::Stride, std::move(measurements)};
 }

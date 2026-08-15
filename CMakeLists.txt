@@ -35,6 +35,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_executable(cache_bench src/main.cpp
 	src/system_info/system_info.cpp
 	src/cache_algorithms/experiments.cpp
+	src/report/report.cpp
 )
 
 # add to the header search path

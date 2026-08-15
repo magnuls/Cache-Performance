@@ -1,99 +1,16 @@
 #ifndef EXPERIMENTS_H
 #define EXPERIMENTS_H
-#include <cstddef>
-#include <random>
-#include <vector>
+// Entry points for the sweeps. One declaration per experiment.
 
-#include "../system_info/system_info.h"
-#include "../types.h"
-
-// The error will happen if you are not on an apple device
-#ifndef __APPLE__
-#error "cache_bench targets Apple Silicon"
-#endif
-
-#ifndef CACHE_LINE
-#define CACHE_LINE 128
-#endif
-
-/*
- * Sweep bounds. Our starting set  for readingis 4KB, our ending set is 256MB.
- * 2^12 = 4096 bytes, 2^28 = 268,435,456 bytes.
- */
-inline constexpr i64 STARTING_SET_READ = i64{1} << 12;
-inline constexpr i64 ENDING_SET_READ = i64{1} << 28;
-inline constexpr i64 TRIALS = 5;
-
-// 8 bytes -> 1024
-inline constexpr i64 STARTING_SET_WRITE = i64{1} << 3;
-inline constexpr i64 ENDING_SET_WRITE = i64{1} << 10;
-
-// Stride Lengths (4B -> 512B)
-inline constexpr i64 START_STRIDE_LENGTH = i64{1} << 2;
-inline constexpr i64 END_STRIDE_LENGTH = i64{1} << 9;
-
-// Random engine thing, defined in experiments.cpp
-extern std::mt19937_64 rng;
-
-// Each node is 128 bytes (one cache line)
-inline constexpr i64 kcache_line_size = CACHE_LINE;
-struct alignas(kcache_line_size) Node {
-    Node* next;
-    u64 writeto = 1u;
-};
-
-static_assert(sizeof(Node) == kcache_line_size);
-
-struct Measurement {
-    // Size of the array in bytes
-    i64 buffer_bytes;
-    f64 ns_per_access;
-};
-
-/*
- * sattolo -> shuffles next pointers in place, producing a single
- * cycle through all elements. Works with any T that has a
- * T* next member.
- * Precondition: arr must be identity-linked (arr[i].next == &arr[i]).
- */
-template<typename T>
-void sattolo(T* arr, i64 count, std::mt19937_64& engine) {
-    for (i64 i = 0; i < count - 1; ++i) {
-        std::uniform_int_distribution<i64> dist(i + 1, count - 1);
-        std::swap(arr[i].next, arr[dist(engine)].next);
-    }
-}
-
-template<typename T>
-void sattolo(T* arr, i64 count) {
-    sattolo(arr, count, rng);
-}
-
-/*
- * warm_loop -> walks the chain untimed once, so cold misses and
- * page faults occur off the clock
- *
- * fill_array -> identity-links (node->next = &node) the array in place
- *
- * total_accesses -> number of accesses for a given array size
- *
- * timed_access -> runs repeated timed chases, returns the
- * Measurement struct with the smallest ns_per_access
- */
-void warm_loop(Node* arr, i64 count);
-void fill_array(Node* arr, i64 count);
-i64 total_accesses(i64 arr_size);
-f64 timed_access(Node* arr, i64 num_accesses);
+#include "measurement.h"
+#include "system_info/system_info.h"
+#include "types.h"
 
 /*
  * Runs the full sweep from STARTING_SET to ENDING_SET.
  * Each Measurement is the minimum over repeated timed runs.
  */
-std::vector<Measurement> cache_size_detection();
-std::vector<Measurement> cache_line_size_detection(const AppleSystemInfo& s);
+SweepResult cache_size_detection();
+SweepResult cache_line_size_detection(const AppleSystemInfo& s);
 
-void size_label(i64 bytes, char* out, size_t out_size);
-
-void display_measurements(const std::vector<Measurement>& v);
-void write_csv(const std::vector<Measurement>& v, const char* path, const SystemInfo& info);
 #endif
