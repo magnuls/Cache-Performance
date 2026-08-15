@@ -5,7 +5,10 @@ x axis is log base 2
 y axis is log base 10
 
 CSV col headers
-size_bytes,label,ns_per_access,l1_bytes,l2_bytes,l3_bytes,ram_bytes
+<x>,label,ns_per_access,l1_bytes,l2_bytes,l3_bytes,ram_bytes
+
+The first column is named after whatever the sweep varied -- size_bytes,
+stride_bytes or threads -- so it is always read by position, never by name.
 """
 
 from collections.abc import Sequence
@@ -33,7 +36,10 @@ def size_label(n: int) -> str:
         return f"{n // GB}G"
     if n >= MB:
         return f"{n // MB}M"
-    return f"{n // KB}K"
+    if n >= KB:
+        return f"{n // KB}K"
+    # Strides are all sub-KiB; without this every one of them rounds to "0K".
+    return f"{n}B"
 
 
 def decade_ticks(
@@ -70,6 +76,7 @@ def plot_sweep(
     curves: Sequence[Curve],
     hw_row: pd.Series,
     title: str,
+    xlabel: str = "Working Set Size (bytes)",
     ylabel: str = "Latency (ns per access)",
     headroom: float = 3,
 ) -> tuple[Figure, Axes]:
@@ -92,7 +99,7 @@ def plot_sweep(
     ax.set_xscale("log", base=2)
     ax.set_xticks(xticks)
     ax.set_xticklabels([size_label(t) for t in xticks])
-    ax.set_xlabel("Working Set Size (bytes)")
+    ax.set_xlabel(xlabel)
 
     # y axis is 1-2-5 ticks derived from the data so the plot survives
     # new numbers
@@ -132,20 +139,45 @@ def column(df: pd.DataFrame, name: str) -> pd.Series:
     return cast(pd.Series, df[name])
 
 
+def x_column(df: pd.DataFrame) -> pd.Series:
+    """The swept axis, always column 0. Its name varies by sweep, so never
+    reach for it by name."""
+    return cast(pd.Series, df[df.columns[0]])
+
+
+AXIS_LABELS = {
+    "size_bytes": "Working Set Size (bytes)",
+    "stride_bytes": "Stride (bytes)",
+    "threads": "Threads",
+}
+
+
+def x_label(df: pd.DataFrame) -> str:
+    return AXIS_LABELS.get(str(df.columns[0]), str(df.columns[0]))
+
+
 def curves_by(
     df: pd.DataFrame, column_name: str, y: str = "ns_per_access", fmt: str = "{}"
 ) -> list[Curve]:
     """One curve per distinct value in `column`, sorted."""
     return [
-        (column(g, "size_bytes"), column(g, y), fmt.format(key))
+        (x_column(g), column(g, y), fmt.format(key))
         for key, g in sorted(df.groupby(column_name), key=lambda kv: cast(Any, kv[0]))
     ]
 
 
+TITLES = {
+    "size_bytes": "CPU Cache Latency -> Read",
+    "stride_bytes": "CPU Cache Line Size -> Read",
+    "threads": "CPU Cache Latency under contention",
+}
+
+
 def read_plot(path: str = "size_detection.csv") -> tuple[Figure, Axes]:
     df = load(path)
-    curves = [(df.size_bytes, df.ns_per_access, "ptr chase")]
-    return plot_sweep(curves, df.iloc[0], "CPU Cache Latency -> Read")
+    curves = [(x_column(df), df.ns_per_access, "ptr chase")]
+    title = TITLES.get(str(df.columns[0]), str(df.columns[0]))
+    return plot_sweep(curves, df.iloc[0], title, xlabel=x_label(df))
 
 
 def write_plot(path: str = "size_detection.csv") -> tuple[Figure, Axes]:
@@ -166,8 +198,11 @@ def thread_plot(
 
 
 def main() -> None:
-    read_plot()
+    read_plot("size_detection.csv")
     plt.show()
+
+    # read_plot("cache_line_size_detection.csv")
+    # plt.show()
 
 
 if __name__ == "__main__":
