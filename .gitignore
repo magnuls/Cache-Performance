@@ -13,6 +13,10 @@ HOW_TO_MEASURE_CACHE_PERFORMANCE.txt
 #Csv files
 results.csv
 size_detection.csv
+cache_line_size_detection.csv
+
+#Python bytecode
+__pycache__/
 
 #A python script example from the website
 ex.py
@@ -20,4 +24,7 @@ ex.py
 
 #Instructions for CMake
 BUILDING.md
+REVIEW.txt
+.clang-tidy
+
 
