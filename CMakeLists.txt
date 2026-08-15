@@ -21,12 +21,11 @@ if(NOT LINE OR LINE EQUAL 0)
   set(LINE 64)
 endif()
 
-# Default to a Release build if the user didn't specify one.
-# IMPORTANT for benchmarking: an unoptimized (Debug) build will completely
-# distort cache-performance measurements. Always benchmark with -O2/-O3.
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-endif()
+# No build type on purpose. Release and RelWithDebInfo both define NDEBUG,
+# which compiles out every assert() in the benchmark; Debug leaves the code
+# at -O0, which makes cache measurements meaningless. Leaving CMAKE_BUILD_TYPE
+# empty means CMake contributes no flags at all, so the optimisation level
+# below is the only one in play and NDEBUG is never defined.
 
 # Export compile_commands.json so clangd (your editor's linter/LSP)
 # can find headers and flags automatically.
@@ -42,7 +41,8 @@ add_executable(cache_bench src/main.cpp
 target_include_directories(cache_bench PUBLIC ${CMAKE_SOURCE_DIR}/src )
 
 # Warnings help catch mistakes early. These flags are for GCC/Clang
-# (AppleClang on macOS included).
+# (AppleClang on macOS included). -O2 -g here rather than via a build type,
+# see the CMAKE_BUILD_TYPE note above.
 target_compile_definitions(cache_bench PRIVATE CACHE_LINE=${LINE})
-target_compile_options(cache_bench PRIVATE -Wall -Wextra)
+target_compile_options(cache_bench PRIVATE -O2 -g -Wall -Wextra)
 
