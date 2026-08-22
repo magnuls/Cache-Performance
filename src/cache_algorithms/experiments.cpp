@@ -44,13 +44,11 @@ void fill_array(Node* arr, i64 count) {
  * page faults occur off the clock
  */
 void warm_loop(Node* arr, i64 count) {
-    Node* volatile dead;
-
     Node* temp = &arr[0];
     while (--count >= 0) {
         temp = temp->next;
     }
-    dead = temp;
+    asm volatile("" ::"r"(temp) : "memory");
 }
 
 /*
