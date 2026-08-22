@@ -107,7 +107,7 @@ SweepResult cache_size_detection() {
 
         i64 accesses = total_accesses(count);
         f64 min_ns_pa = std::numeric_limits<f64>::max();
-        for (i16 i{}; i < TRIALS; ++i) {
+        for (i16 t{}; t < TRIALS; ++t) {
             min_ns_pa = std::min(timed_access(arr.get(), accesses), min_ns_pa);
         }
         measurements.push_back(Measurement{static_cast<i64>(sizeof(Node)) * count, min_ns_pa});
