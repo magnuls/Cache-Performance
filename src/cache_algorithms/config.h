@@ -16,8 +16,8 @@ inline constexpr i64 TRIALS = 5;
 inline constexpr i64 STARTING_SET_WRITE = i64{1} << 3;
 inline constexpr i64 ENDING_SET_WRITE = i64{1} << 10;
 
-// Stride Lengths (4B -> 512B)
+// Stride Lengths (4B -> 2KB)
 inline constexpr i64 START_STRIDE_LENGTH = i64{1} << 2;
-inline constexpr i64 END_STRIDE_LENGTH = i64{1} << 9;
+inline constexpr i64 END_STRIDE_LENGTH = i64{1} << 11;
 
 #endif
