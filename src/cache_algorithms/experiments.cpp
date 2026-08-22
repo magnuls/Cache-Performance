@@ -118,30 +118,15 @@ SweepResult cache_size_detection() {
 SweepResult cache_line_size_detection(const AppleSystemInfo& s) {
     assert(START_STRIDE_LENGTH >= sizeof(u32));
 
-    const i64 buffer_bytes = s.l2_cache * 4;
+    // Constant across the sweep: enough slots that at stride >= line size the
+    // touched-line footprint is 4 x L2, keeping the plateau region out of cache.
+    const i64 num_slots = (4 * s.l2_cache) / kcache_line_size;
     std::vector<Measurement> measurements;
     std::mt19937_64 rng(std::random_device{}());
 
-    // Shuffling Logic using Sattolo shuffle
-    auto shuffle = [&rng](const i64 num_slots, const i64& words_per_slot,
-                          std::vector<u32>& buf) -> std::vector<u32> {
-        std::vector<u32> perm(num_slots);
-        std::iota(perm.begin(), perm.end(), 0);
-
-        for (i64 i = num_slots - 1; i > 0; --i) {
-            std::uniform_int_distribution<i64> d(0, i - 1);
-            std::swap(perm[i], perm[d(rng)]);
-        }
-        for (i64 i = 0; i < num_slots; ++i) {
-            buf[static_cast<i64>(perm[i]) * words_per_slot] = perm[(i + 1) % num_slots];
-        }
-        return perm;
-    };
-
     // Pointer Chasing
-    auto chase = [&](const i64 n, const i64 words_per_slot, const std::vector<u32>& perm,
-                     const std::vector<u32>& buf) -> f64 {
-        u32 cur = perm[0];
+    auto chase = [&](const i64 n, const i64 words_per_slot, const std::vector<u32>& buf) -> f64 {
+        u32 cur = 0;
         auto start = std::chrono::steady_clock::now();
 
         for (i64 j = 0; j < n; ++j)
@@ -174,18 +159,21 @@ SweepResult cache_line_size_detection(const AppleSystemInfo& s) {
     for (i64 stride = START_STRIDE_LENGTH; stride <= END_STRIDE_LENGTH; stride <<= 1) {
         show_progress(step++, total_steps, stride, Axis::Stride);
 
-        const i64 num_slots = buffer_bytes / stride;
+        const i64 buffer_bytes = num_slots * stride;
         std::vector<u32> buf(buffer_bytes / sizeof(u32), 0);
         const i64 words_per_slot = stride / sizeof(u32);
 
-        // Sattolo
-        std::vector<u32> perm = shuffle(num_slots, words_per_slot, buf);
+        // Sattolo: bake the successor table into the buffer at slot boundaries
+        std::vector<u32> next = sattolo_cycle(num_slots, rng);
+        for (i64 i = 0; i < num_slots; ++i) {
+            buf[i * words_per_slot] = next[i];
+        }
         // Warm loop
-        chase(num_slots, words_per_slot, perm, buf);
+        chase(num_slots, words_per_slot, buf);
         // Real loop
         f64 min_ns = std::numeric_limits<f64>::max();
         for (i64 t = 0; t < TRIALS; ++t) {
-            min_ns = std::min(min_ns, chase(num_slots, words_per_slot, perm, buf));
+            min_ns = std::min(min_ns, chase(num_slots, words_per_slot, buf));
         }
         measurements.push_back({stride, min_ns});
     }
