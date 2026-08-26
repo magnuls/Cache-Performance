@@ -12,5 +12,6 @@
  */
 SweepResult cache_size_detection();
 SweepResult cache_line_size_detection(const AppleSystemInfo& s);
+SweepResult cache_write_latency(const std::vector<Measurement>& read_measurements);
 
 #endif
