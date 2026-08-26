@@ -1,6 +1,7 @@
 #ifndef TYPES_H
 #define TYPES_H
 #include <cstdint>
+#include <limits>
 using i8 = std::int8_t;
 using i16 = std::int16_t;
 using i32 = std::int32_t;
@@ -13,4 +14,7 @@ using u64 = std::uint64_t;
 
 using f32 = float;
 using f64 = double;
+
+f32 F32_MIN = std::numeric_limits<f32>::lowest();
+f64 F64_MIN = std::numeric_limits<f64>::lowest();
 #endif
