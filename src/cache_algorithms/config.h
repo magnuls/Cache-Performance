@@ -13,8 +13,8 @@ inline constexpr i64 ENDING_SET_READ = i64{1} << 28;
 inline constexpr i64 TRIALS = 5;
 
 // 8 bytes -> 1024
-inline constexpr i64 STARTING_SET_WRITE = i64{1} << 3;
-inline constexpr i64 ENDING_SET_WRITE = i64{1} << 10;
+inline constexpr i64 STARTING_SET_WRITE = i64{1} << 12;
+inline constexpr i64 ENDING_SET_WRITE = i64{1} << 28;
 
 // Stride Lengths (4B -> 2KB)
 inline constexpr i64 START_STRIDE_LENGTH = i64{1} << 2;
