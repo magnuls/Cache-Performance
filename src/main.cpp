@@ -36,5 +36,10 @@ int main() {
     display_measurements(line_size_detection);
     write_csv(line_size_detection, info);
 
+    std::cout << std::string(40, '-') << '\n';
+
+    auto write_measurement = cache_write_latency(size_detection.points);
+    display_measurements(write_measurement);
+    write_csv(cache_write_measurement, info);
     return 0;
 }
