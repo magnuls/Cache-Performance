@@ -40,6 +40,6 @@ int main() {
 
     auto write_measurement = cache_write_latency(size_detection.points);
     display_measurements(write_measurement);
-    write_csv(cache_write_measurement, info);
+    write_csv(write_measurement, info);
     return 0;
 }
