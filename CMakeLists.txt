@@ -50,3 +50,12 @@ target_compile_options(cache_bench_lib PUBLIC -O2 -g -Wall -Wextra)
 # The executable target for the benchmark.
 add_executable(cache_bench src/main.cpp)
 target_link_libraries(cache_bench PRIVATE cache_bench_lib)
+
+# GoogleTest suite. -LE slow keeps the full sweeps out of the `test` target;
+# run them with `ctest -L slow`.
+option(CACHE_BENCH_BUILD_TESTS "Build the GoogleTest suite" ON)
+if(CACHE_BENCH_BUILD_TESTS)
+	enable_testing()
+	set(CMAKE_CTEST_ARGUMENTS "-LE;slow")
+	add_subdirectory(test)
+endif()
