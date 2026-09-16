@@ -15,10 +15,10 @@ using u64 = std::uint64_t;
 using f32 = float;
 using f64 = double;
 
-f32 F32_MIN = std::numeric_limits<f32>::lowest();
-f64 F64_MIN = std::numeric_limits<f64>::lowest();
+inline constexpr f32 F32_MIN = std::numeric_limits<f32>::lowest();
+inline constexpr f64 F64_MIN = std::numeric_limits<f64>::lowest();
 
-f32 F32_MAX = std::numeric_limits<f32>::max();
-f64 F64_MAX = std::numeric_limits<f64>::max();
+inline constexpr f32 F32_MAX = std::numeric_limits<f32>::max();
+inline constexpr f64 F64_MAX = std::numeric_limits<f64>::max();
 
 #endif
