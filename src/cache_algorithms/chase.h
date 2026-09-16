@@ -48,10 +48,11 @@ inline f64 timed_access(Node* arr, i64 num_accesses, Sweep s = Sweep::Size) {
         Node* p = arr;
         const bool write = (s == Sweep::Write);
         const auto start{std::chrono::steady_clock::now()};
-        for (i64 i = 0; i < num_accesses; ++i)
+        for (i64 i = 0; i < num_accesses; ++i) {
             if (write)
                 p->writeto = static_cast<u64>(i);
-        p = p->next;
+            p = p->next;
+        }
         const auto finish{std::chrono::steady_clock::now()};
         // volatile assignment so compiler dosen't frick me
         asm volatile("" ::"r"(p) : "memory");
