@@ -31,19 +31,22 @@ endif()
 # can find headers and flags automatically.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# The executable target for the benchmark.
-add_executable(cache_bench src/main.cpp
+# The benchmark sources minus main, built once and shared by cache_bench and the tests.
+add_library(cache_bench_lib STATIC
 	src/system_info/system_info.cpp
 	src/cache_algorithms/experiments.cpp
 	src/report/report.cpp
 )
 
 # add to the header search path
-target_include_directories(cache_bench PUBLIC ${CMAKE_SOURCE_DIR}/src )
+target_include_directories(cache_bench_lib PUBLIC ${CMAKE_SOURCE_DIR}/src )
 
 # Warnings help catch mistakes early. These flags are for GCC/Clang
 # (AppleClang on macOS included). -O2 -g here rather than via a build type,
 # see the CMAKE_BUILD_TYPE note above.
-target_compile_definitions(cache_bench PRIVATE CACHE_LINE=${LINE})
-target_compile_options(cache_bench PRIVATE -O2 -g -Wall -Wextra)
+target_compile_definitions(cache_bench_lib PUBLIC CACHE_LINE=${LINE})
+target_compile_options(cache_bench_lib PUBLIC -O2 -g -Wall -Wextra)
 
+# The executable target for the benchmark.
+add_executable(cache_bench src/main.cpp)
+target_link_libraries(cache_bench PRIVATE cache_bench_lib)
