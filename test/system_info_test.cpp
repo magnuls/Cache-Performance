@@ -6,11 +6,15 @@
 #include "cache_algorithms/node.h"
 #include "system_info/system_info.h"
 
-// One instance for the file: the constructor shells out to system_profiler.
+// One instance for the file
 class AppleSystemInfoTest : public ::testing::Test {
-   protected:
-    static void SetUpTestSuite() { info = std::make_unique<AppleSystemInfo>(); }
-    static void TearDownTestSuite() { info.reset(); }
+  protected:
+    static void SetUpTestSuite() {
+        info = std::make_unique<AppleSystemInfo>();
+    }
+    static void TearDownTestSuite() {
+        info.reset();
+    }
     static std::unique_ptr<AppleSystemInfo> info;
 };
 std::unique_ptr<AppleSystemInfo> AppleSystemInfoTest::info;
@@ -42,7 +46,8 @@ TEST_F(AppleSystemInfoTest, ClustersDivideCoresEvenly) {
     EXPECT_EQ(info->p_clusters * info->p_cpus_per_l2, info->p_cores);
     if (info->e_cores > 0) {
         EXPECT_GT(info->e_cpus_per_l2, 0);
-        EXPECT_EQ(info->e_clusters * info->e_cpus_per_l2, info->e_cores);
+        EXPECT_EQ(info->e_clusters * info->e_cpus_per_l2,
+                  info->e_cores);
     }
 }
 
@@ -60,7 +65,8 @@ TEST_F(AppleSystemInfoTest, SummaryPrintsHeaderAndChip) {
     testing::internal::CaptureStdout();
     info->print_summary();
     std::string out = testing::internal::GetCapturedStdout();
-    EXPECT_NE(out.find("Apple Silicon System Info"), std::string::npos);
+    EXPECT_NE(out.find("Apple Silicon System Info"),
+              std::string::npos);
     EXPECT_NE(out.find("Chip:"), std::string::npos);
     EXPECT_NE(out.find(info->chip_name), std::string::npos);
 }

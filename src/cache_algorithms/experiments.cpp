@@ -23,15 +23,16 @@
 #include "types.h"
 
 /*
- * First Pass should be dense, go from 4KB -> 256 MB, then detect where
- * the cliffs are and add midpoints there to get a better estimate
- * of the effective cache size. We will double each byte size so
- * it will be 16 doublings to reach 256MB.
+ * First Pass should be dense, go from 4KB -> 256 MB, then detect
+ * where the cliffs are and add midpoints there to get a better
+ * estimate of the effective cache size. We will double each byte size
+ * so it will be 16 doublings to reach 256MB.
  */
 
 /*
- * Sequence of operations...
- * Instantiate array size -> Create Array -> fill array -> shuffle -> warm loop
+ * Sequence of operations:
+ * Instantiate array size -> Create Array -> fill array -> shuffle ->
+ * warm loop
  * -> timed_acess -> push to measurements -> back to beginning
  */
 SweepResult cache_size_detection() {
@@ -55,26 +56,32 @@ SweepResult cache_size_detection() {
         i64 accesses = total_accesses(count);
         f64 min_ns_pa = std::numeric_limits<f64>::max();
         for (i16 t{}; t < TRIALS; ++t) {
-            min_ns_pa = std::min(timed_access(arr.get(), accesses), min_ns_pa);
+            min_ns_pa = std::min(timed_access(arr.get(), accesses),
+                                 min_ns_pa);
         }
-        measurements.push_back(Measurement{static_cast<i64>(sizeof(Node)) * count, min_ns_pa});
+        measurements.push_back(Measurement{
+            static_cast<i64>(sizeof(Node)) * count, min_ns_pa});
     }
-    show_progress(total_steps, total_steps, ENDING_SET_READ, Axis::Bytes);
+    show_progress(total_steps, total_steps, ENDING_SET_READ,
+                  Axis::Bytes);
     std::fprintf(stderr, "\n");
-    return SweepResult{Sweep::Size, Axis::Bytes, std::move(measurements)};
+    return SweepResult{Sweep::Size, Axis::Bytes,
+                       std::move(measurements)};
 }
 
 SweepResult cache_line_size_detection(const AppleSystemInfo& s) {
     assert(START_STRIDE_LENGTH >= sizeof(u32));
 
-    // Constant across the sweep: enough slots that at stride >= line size the
-    // touched-line footprint is 4 x L2, keeping the plateau region out of cache.
+    // Constant across the sweep: enough slots that at stride >= line
+    // size the touched-line footprint is 4 x L2, keeping the plateau
+    // region out of cache.
     const i64 num_slots = (4 * s.l2_cache) / kcache_line_size;
     std::vector<Measurement> measurements;
     std::mt19937_64 rng(std::random_device{}());
 
     // Pointer Chasing
-    auto chase = [&](const i64 n, const i64 words_per_slot, const std::vector<u32>& buf) -> f64 {
+    auto chase = [&](const i64 n, const i64 words_per_slot,
+                     const std::vector<u32>& buf) -> f64 {
         u32 cur = 0;
         auto start = std::chrono::steady_clock::now();
 
@@ -89,15 +96,17 @@ SweepResult cache_line_size_detection(const AppleSystemInfo& s) {
          * "r"(cur) means that asm reads cur from a register
          * so we must have cur be a computed value at this Pointer
          *
-         * "memory" -> asm might read or write to memory so the compiler
-         * can't reorder memory ops accros it or cache values across the
-         * boundry
+         * "memory" -> asm might read or write to memory so the
+         * compiler can't reorder memory ops accros it or cache values
+         * across the boundry
          *
-         * volatile -> don't delete this asm even though basically nothing happens
-         * to it
+         * volatile -> don't delete this asm even though basically
+         * nothing happens to it
          */
         asm volatile("" ::"r"(cur) : "memory");
-        return std::chrono::duration<f64, std::nano>(end - start).count() / n;
+        return std::chrono::duration<f64, std::nano>(end - start)
+                   .count() /
+               n;
     };
 
     i64 total_steps{}, step{};
@@ -105,14 +114,16 @@ SweepResult cache_line_size_detection(const AppleSystemInfo& s) {
     for (i64 _ = START_STRIDE_LENGTH; _ <= END_STRIDE_LENGTH; _ <<= 1)
         ++total_steps;
 
-    for (i64 stride = START_STRIDE_LENGTH; stride <= END_STRIDE_LENGTH; stride <<= 1) {
+    for (i64 stride = START_STRIDE_LENGTH;
+         stride <= END_STRIDE_LENGTH; stride <<= 1) {
         show_progress(step++, total_steps, stride, Axis::Stride);
 
         const i64 buffer_bytes = num_slots * stride;
         std::vector<u32> buf(buffer_bytes / sizeof(u32), 0);
         const i64 words_per_slot = stride / sizeof(u32);
 
-        // Sattolo: bake the successor table into the buffer at slot boundaries
+        // Sattolo: bake the successor table into the buffer at slot
+        // boundaries
         std::vector<u32> next = sattolo_cycle(num_slots, rng);
         for (i64 i = 0; i < num_slots; ++i) {
             buf[i * words_per_slot] = next[i];
@@ -122,18 +133,23 @@ SweepResult cache_line_size_detection(const AppleSystemInfo& s) {
         // Real loop
         f64 min_ns = std::numeric_limits<f64>::max();
         for (i64 t = 0; t < TRIALS; ++t) {
-            min_ns = std::min(min_ns, chase(num_slots, words_per_slot, buf));
+            min_ns = std::min(min_ns,
+                              chase(num_slots, words_per_slot, buf));
         }
         measurements.push_back({stride, min_ns});
     }
-    show_progress(total_steps, total_steps, END_STRIDE_LENGTH, Axis::Stride);
+    show_progress(total_steps, total_steps, END_STRIDE_LENGTH,
+                  Axis::Stride);
     std::fprintf(stderr, "\n");
-    return SweepResult{Sweep::LineSize, Axis::Stride, std::move(measurements)};
+    return SweepResult{Sweep::LineSize, Axis::Stride,
+                       std::move(measurements)};
 }
 
-// We need the difference between (read+write) and read to get the write measurement timing
-// read_measurements will be the vector that holds Measurements for the read only
-SweepResult cache_write_latency(const std::vector<Measurement>& read_measurements) {
+// We need the difference between (read+write) and read to get the
+// write measurement timing read_measurements will be the vector that
+// holds Measurements for the read only
+SweepResult cache_write_latency(
+    const std::vector<Measurement>& read_measurements) {
     // size 8 - > 1024
     std::vector<Measurement> measurements;
     i64 total_steps = 0;
@@ -155,14 +171,20 @@ SweepResult cache_write_latency(const std::vector<Measurement>& read_measurement
         i64 accesses = total_accesses(count);
         f64 min_ns_pa = std::numeric_limits<f64>::max();
         for (i16 t{}; t < TRIALS; ++t) {
-            min_ns_pa = std::min(timed_access(arr.get(), accesses, Sweep::Write), min_ns_pa);
+            min_ns_pa = std::min(
+                timed_access(arr.get(), accesses, Sweep::Write),
+                min_ns_pa);
         }
-        measurements.push_back(
-            Measurement{static_cast<i64>(sizeof(Node)) * count,
-                        std::max(min_ns_pa - read_measurements[rm_index].ns_per_access, 0.0)});
+        measurements.push_back(Measurement{
+            static_cast<i64>(sizeof(Node)) * count,
+            std::max(min_ns_pa -
+                         read_measurements[rm_index].ns_per_access,
+                     0.0)});
         rm_index++;
     }
-    show_progress(total_steps, total_steps, ENDING_SET_WRITE, Axis::Bytes);
+    show_progress(total_steps, total_steps, ENDING_SET_WRITE,
+                  Axis::Bytes);
     std::fprintf(stderr, "\n");
-    return SweepResult{Sweep::Write, Axis::Bytes, std::move(measurements)};
+    return SweepResult{Sweep::Write, Axis::Bytes,
+                       std::move(measurements)};
 }

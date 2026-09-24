@@ -11,13 +11,16 @@ namespace {
 
 i64 steps_between(i64 lo, i64 hi) {
     i64 n = 0;
-    for (i64 s = lo; s <= hi; s <<= 1) ++n;
+    for (i64 s = lo; s <= hi; s <<= 1)
+        ++n;
     return n;
 }
 
 void expect_doubling_axis(const SweepResult& r, i64 start, i64 end) {
-    ASSERT_EQ(static_cast<i64>(r.points.size()), steps_between(start, end));
-    for (size_t i = 0; i < r.points.size(); ++i) EXPECT_EQ(r.points[i].x, start << i);
+    ASSERT_EQ(static_cast<i64>(r.points.size()),
+              steps_between(start, end));
+    for (size_t i = 0; i < r.points.size(); ++i)
+        EXPECT_EQ(r.points[i].x, start << i);
 }
 
 void expect_finite_positive(const SweepResult& r) {
@@ -29,9 +32,9 @@ void expect_finite_positive(const SweepResult& r) {
 
 } // namespace
 
-// The read sweep is the slowest part and feeds the write sweep, so run it once.
+// run once
 class SweepTest : public ::testing::Test {
-   protected:
+  protected:
     static void SetUpTestSuite() {
         info = std::make_unique<AppleSystemInfo>();
         read = std::make_unique<SweepResult>(cache_size_detection());
@@ -54,7 +57,8 @@ TEST_F(SweepTest, SizeDetectionShape) {
 }
 
 TEST_F(SweepTest, LargestWorkingSetIsSlowerThanSmallest) {
-    EXPECT_GT(read->points.back().ns_per_access, read->points.front().ns_per_access);
+    EXPECT_GT(read->points.back().ns_per_access,
+              read->points.front().ns_per_access);
 }
 
 TEST_F(SweepTest, LineSizeDetectionShape) {

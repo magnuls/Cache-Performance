@@ -38,7 +38,7 @@ def size_label(n: int) -> str:
         return f"{n // MB}M"
     if n >= KB:
         return f"{n // KB}K"
-    # Strides are all sub-KiB; without this every one of them rounds to "0K".
+    # Strides are all sub-KiB
     return f"{n}B"
 
 
@@ -54,10 +54,7 @@ def decade_ticks(
 
 
 def hardware_boundaries(row: pd.Series) -> list[tuple[int, str]]:
-    """(bytes, name) for every cache level derived from machine
-    l3_bytes is -1 on Apple Silicon (no true L3, instead we have a SLC which is
-    not exposed from sysctl), so it drops out here rather than being special case
-    """
+    """(bytes, name) for every cache level derived from machine"""
     levels = [
         (row.l1_bytes, "L1d"),
         (row.l2_bytes, "L2"),
@@ -80,14 +77,6 @@ def plot_sweep(
     ylabel: str = "Latency (ns per access)",
     headroom: float = 3,
 ) -> tuple[Figure, Axes]:
-    """Draw one or more latency curves on a shared log/log axis.
-
-    curves  -> list of (xs, ys, label); every curve shares the x axis
-    hw_row  -> any row of the frame, used for the l1/l2/l3/ram columns
-    headroom-> multiplier on the largest y value, sets the top of the axis
-
-    Returns (fig, ax) so the caller can save, tweak, or show it.
-    """
     fig, ax = plt.subplots(figsize=(14, 8), dpi=110)
     for xs, ys, label in curves:
         ax.plot(xs, ys, label=label)
@@ -135,13 +124,10 @@ def plot_sweep(
 
 
 def column(df: pd.DataFrame, name: str) -> pd.Series:
-    """df[name] types as Series | DataFrame; a str key always gives a Series."""
     return cast(pd.Series, df[name])
 
 
 def x_column(df: pd.DataFrame) -> pd.Series:
-    """The swept axis, always column 0. Its name varies by sweep, so never
-    reach for it by name."""
     return cast(pd.Series, df[df.columns[0]])
 
 
@@ -159,7 +145,6 @@ def x_label(df: pd.DataFrame) -> str:
 def curves_by(
     df: pd.DataFrame, column_name: str, y: str = "ns_per_access", fmt: str = "{}"
 ) -> list[Curve]:
-    """One curve per distinct value in `column`, sorted."""
     return [
         (x_column(g), column(g, y), fmt.format(key))
         for key, g in sorted(df.groupby(column_name), key=lambda kv: cast(Any, kv[0]))
@@ -181,8 +166,6 @@ def read_plot(path: str = "size_detection.csv") -> tuple[Figure, Axes]:
 
 
 def write_plot(path: str = "size_detection.csv") -> tuple[Figure, Axes]:
-    """Both modes on one axis
-    We expect the write curve to sit above read past L1."""
     df = load(path)
     curves = curves_by(df, "mode", fmt="{}")
     return plot_sweep(curves, df.iloc[0], "CPU Cache Latency, read vs write")
@@ -191,7 +174,6 @@ def write_plot(path: str = "size_detection.csv") -> tuple[Figure, Axes]:
 def thread_plot(
     path: str = "results_mt.csv", y: str = "ns_mean"
 ) -> tuple[Figure, Axes]:
-    """One curve per thread count. Curves overlap in private L1, fan out in shared L2."""
     df = load(path)
     curves = curves_by(df, "threads", y=y, fmt="{} threads")
     return plot_sweep(curves, df.iloc[0], "CPU Cache Latency under contention")

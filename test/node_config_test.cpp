@@ -9,7 +9,9 @@
 
 namespace {
 
-constexpr bool is_pow2(i64 v) { return v > 0 && (v & (v - 1)) == 0; }
+constexpr bool is_pow2(i64 v) {
+    return v > 0 && (v & (v - 1)) == 0;
+}
 
 } // namespace
 
@@ -27,7 +29,9 @@ TEST(Node, DefaultWritetoIsOne) {
 TEST(Node, HeapArrayElementsAreLineAligned) {
     auto arr = std::make_unique<Node[]>(8);
     for (i64 i = 0; i < 8; ++i)
-        EXPECT_EQ(reinterpret_cast<std::uintptr_t>(&arr[i]) % kcache_line_size, 0u);
+        EXPECT_EQ(reinterpret_cast<std::uintptr_t>(&arr[i]) %
+                      kcache_line_size,
+                  0u);
 }
 
 TEST(Config, SweepBoundsArePowersOfTwo) {
@@ -49,8 +53,8 @@ TEST(Config, SmallestWorkingSetHoldsAtLeastOneNode) {
     EXPECT_GE(STARTING_SET_READ, static_cast<i64>(sizeof(Node)));
 }
 
-// cache_write_latency subtracts read_measurements by index, so both sweeps
-// must step through identical sizes.
+// cache_write_latency subtracts read_measurements by index
+// both sweeps must step through identical sizes
 TEST(Config, WriteSweepMatchesReadSweep) {
     EXPECT_EQ(STARTING_SET_WRITE, STARTING_SET_READ);
     EXPECT_EQ(ENDING_SET_WRITE, ENDING_SET_READ);

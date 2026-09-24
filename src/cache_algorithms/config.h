@@ -1,12 +1,13 @@
 #ifndef CONFIG_H
 #define CONFIG_H
-// Tuning knobs for every sweep: axis bounds and how many trials to keep the min of.
+// Tuning knobs for every sweep: axis bounds and how many trials to
+// keep the min of.
 
 #include "types.h"
 
 /*
- * Sweep bounds. Our starting set  for readingis 4KB, our ending set is 256MB.
- * 2^12 = 4096 bytes, 2^28 = 268,435,456 bytes.
+ * Sweep bounds. Our starting set  for readingis 4KB, our ending set
+ * is 256MB. 2^12 = 4096 bytes, 2^28 = 268,435,456 bytes.
  */
 inline constexpr i64 STARTING_SET_READ = i64{1} << 12;
 inline constexpr i64 ENDING_SET_READ = i64{1} << 28;

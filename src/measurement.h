@@ -1,6 +1,5 @@
 #ifndef MEASUREMENT_H
 #define MEASUREMENT_H
-// Shared vocabulary: what a sweep is, what its x axis means, and what it returns.
 
 #include <vector>
 
