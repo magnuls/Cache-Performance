@@ -9,13 +9,13 @@
  *
  */
 
-enum class Sweep : u8 { Size, LineSize, Write, Thread };
+enum class Sweep : u8 { Size, LineSize, Write, Thread, FalseSharing };
 enum class Axis : u8 { Bytes, Stride, Threads };
-enum class Operation : u8 { Read, Write };
 
 struct Measurement {
     i64 x;
     f64 ns_per_access;
+    i32 threads = 1;
 };
 
 struct SweepResult {

@@ -21,4 +21,16 @@ inline constexpr i64 ENDING_SET_WRITE = i64{1} << 28;
 inline constexpr i64 START_STRIDE_LENGTH = i64{1} << 2;
 inline constexpr i64 END_STRIDE_LENGTH = i64{1} << 11;
 
+inline constexpr i64 STARTING_SET_CONTENTION = i64{1} << 16;
+inline constexpr i64 ENDING_SET_CONTENTION = i64{1} << 26;
+inline constexpr i64 CONTENTION_ACCESSES = 10000000;
+inline constexpr i64 CONTENTION_TRIALS = 3;
+
+inline constexpr i64 START_SEPARATION = 8;
+inline constexpr i64 END_SEPARATION = 1024;
+inline constexpr i64 FALSE_SHARING_WRITES = 5000000;
+
+inline constexpr i64 REFINE_POINTS = 3;
+inline constexpr f64 CLIFF_MIN_RATIO = 1.4;
+
 #endif

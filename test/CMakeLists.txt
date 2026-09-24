@@ -8,6 +8,8 @@ add_executable(
     node_config_test.cpp
     report_test.cpp
     system_info_test.cpp
+    detect_test.cpp
+    threads_test.cpp
 )
 target_link_libraries(unit_tests PRIVATE cache_bench_lib GTest::gtest_main)
 gtest_discover_tests(unit_tests)

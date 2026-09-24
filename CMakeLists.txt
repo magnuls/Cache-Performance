@@ -34,6 +34,7 @@ add_library(
     src/system_info/system_info.cpp
     src/cache_algorithms/experiments.cpp
     src/report/report.cpp
+    src/analysis/detect.cpp
 )
 
 # add to the header search path
@@ -41,6 +42,8 @@ target_include_directories(cache_bench_lib PUBLIC ${CMAKE_SOURCE_DIR}/src)
 
 target_compile_definitions(cache_bench_lib PUBLIC CACHE_LINE=${LINE})
 target_compile_options(cache_bench_lib PUBLIC -O2 -g -Wall -Wextra)
+find_package(Threads REQUIRED)
+target_link_libraries(cache_bench_lib PUBLIC Threads::Threads)
 
 # The executable target for the benchmark.
 add_executable(cache_bench src/main.cpp)
