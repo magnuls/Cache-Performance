@@ -1,4 +1,4 @@
-# cache-performance-script
+# Cache Performance
 
 An empirical latency profile of the memory hierarchy on Apple Silicon.
 It measures what a hot path pays for each dependent load
@@ -10,7 +10,7 @@ The core instrument is a pointer chase over a Sattolo shuffle. Each load's
 address is the result of the previous load, so there is no memory level
 parallelism, no prefetching and no out of order overlap to hide the cost.
 
-## Why a trading system cares
+## How this applies to Trading Systems
 
 Latencies are measured in nanoseconds. Cycle counts assume the nominal P core
 clock of ~4.4 GHz.
