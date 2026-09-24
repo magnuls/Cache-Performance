@@ -4,6 +4,7 @@
 
 #include <cstddef>
 
+#include "analysis/detect.h"
 #include "measurement.h"
 #include "system_info/system_info.h"
 #include "types.h"
@@ -25,5 +26,9 @@ void display_measurements(const SweepResult& r);
  * Path and x-column header both come from r, so no caller can name them wrong.
  */
 void write_csv(const SweepResult& r, const SystemInfo& info);
+
+void print_detection(const Detected& d, const SystemInfo& info);
+
+void write_detection_csv(const Detected& d, const SystemInfo& info);
 
 #endif

@@ -130,11 +130,13 @@ TEST_F(WriteCsv, FileNameFollowsSweepKind) {
     write_csv(one_point(Sweep::Size, Axis::Bytes), info);
     write_csv(one_point(Sweep::LineSize, Axis::Stride), info);
     write_csv(one_point(Sweep::Write, Axis::Bytes), info);
-    write_csv(one_point(Sweep::Thread, Axis::Threads), info);
+    write_csv(one_point(Sweep::Thread, Axis::Bytes), info);
+    write_csv(one_point(Sweep::FalseSharing, Axis::Stride), info);
     EXPECT_TRUE(std::filesystem::exists("size_detection.csv"));
     EXPECT_TRUE(std::filesystem::exists("cache_line_size_detection.csv"));
     EXPECT_TRUE(std::filesystem::exists("write_detection.csv"));
-    EXPECT_TRUE(std::filesystem::exists("thread_detection.csv"));
+    EXPECT_TRUE(std::filesystem::exists("contention.csv"));
+    EXPECT_TRUE(std::filesystem::exists("false_sharing.csv"));
 }
 
 TEST_F(WriteCsv, HeaderAndRowFormat) {
@@ -142,8 +144,15 @@ TEST_F(WriteCsv, HeaderAndRowFormat) {
     write_csv(one_point(Sweep::Size, Axis::Bytes), info);
     auto lines = read_lines("size_detection.csv");
     ASSERT_EQ(lines.size(), 2u);
-    EXPECT_EQ(lines[0], "size_bytes,label,ns_per_access,l1_bytes,l2_bytes,l3_bytes,ram_bytes");
-    EXPECT_EQ(lines[1], "4096,4K,1.5,65536,4194304,-1,1073741824");
+    EXPECT_EQ(lines[0], "size_bytes,label,ns_per_access,threads,l1_bytes,l2_bytes,l3_bytes,ram_bytes");
+    EXPECT_EQ(lines[1], "4096,4K,1.5,1,65536,4194304,-1,1073741824");
+}
+
+TEST_F(WriteCsv, ThreadsColumnCarriesTheCount) {
+    FakeSystemInfo info;
+    SweepResult r{Sweep::Thread, Axis::Bytes, {Measurement{65536, 2.5, 5}}};
+    write_csv(r, info);
+    EXPECT_EQ(read_lines("contention.csv")[1], "65536,64K,2.5,5,65536,4194304,-1,1073741824");
 }
 
 TEST_F(WriteCsv, FirstColumnFollowsAxis) {
@@ -151,7 +160,7 @@ TEST_F(WriteCsv, FirstColumnFollowsAxis) {
     write_csv(one_point(Sweep::LineSize, Axis::Stride, 128), info);
     write_csv(one_point(Sweep::Thread, Axis::Threads, 8), info);
     EXPECT_EQ(read_lines("cache_line_size_detection.csv")[0].rfind("stride_bytes,", 0), 0u);
-    EXPECT_EQ(read_lines("thread_detection.csv")[0].rfind("threads,", 0), 0u);
+    EXPECT_EQ(read_lines("contention.csv")[0].rfind("threads,", 0), 0u);
 }
 
 TEST_F(WriteCsv, EmptySweepWritesHeaderOnly) {
@@ -172,4 +181,27 @@ TEST_F(WriteCsv, PreservesFifteenSignificantDigits) {
     FakeSystemInfo info;
     write_csv(one_point(Sweep::Size, Axis::Bytes, 4096, 1.23456789012345), info);
     EXPECT_NE(read_lines("size_detection.csv")[1].find("1.23456789012345"), std::string::npos);
+}
+
+TEST_F(WriteCsv, DetectionCsvHasOneRowPerQuantity) {
+    FakeSystemInfo info;
+    write_detection_csv(Detected{131072, 155776, 13000000, 16777216, 128}, info);
+    auto lines = read_lines("detection.csv");
+    ASSERT_EQ(lines.size(), 4u);
+    EXPECT_EQ(lines[0], "quantity,detected_bytes,next_bytes,spec_bytes");
+    EXPECT_EQ(lines[1], "l1d,131072,155776,65536");
+    EXPECT_EQ(lines[2], "l2,13000000,16777216,4194304");
+    EXPECT_EQ(lines[3], "line_size,128,-1,128");
+}
+
+TEST(PrintDetection, ShowsLabelsAndError) {
+    FakeSystemInfo info;
+    testing::internal::CaptureStdout();
+    print_detection(Detected{65536, 131072, -1, -1, 128}, info);
+    std::string out = testing::internal::GetCapturedStdout();
+    EXPECT_NE(out.find("l1d"), std::string::npos);
+    EXPECT_NE(out.find("64K"), std::string::npos);
+    EXPECT_NE(out.find("1.00x"), std::string::npos);
+    EXPECT_NE(out.find("n/a"), std::string::npos);
+    EXPECT_NE(out.find("128B"), std::string::npos);
 }

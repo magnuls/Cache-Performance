@@ -15,6 +15,11 @@ FINISHING_ADDITIONS.txt
 results.csv
 size_detection.csv
 cache_line_size_detection.csv
+write_detection.csv
+thread_detection.csv
+contention.csv
+false_sharing.csv
+detection.csv
 
 #Python bytecode
 __pycache__/
